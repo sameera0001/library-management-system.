@@ -1,18 +1,46 @@
 # Library Management System
 
-A Java-based desktop application developed to manage library operations such as adding books, issuing books, and returning books.
-
-## Technologies Used
-- Java
-- Java Swing
-- MySQL
-- JDBC
+A Java-based desktop application developed using **Java Swing and MySQL (JDBC)** to manage library operations such as adding books, issuing books, and returning books.
 
 ## Features
-- Add and manage books
-- Issue and return books
-- Store student and book data in MySQL database
-- User-friendly graphical interface using Java Swing
+- Add new books
+- View available books
+- Issue books to students
+- Return books
+- Database connectivity using JDBC
+- Simple graphical interface using Java Swing
 
-## Project Purpose
-This project was developed as part of academic learning to understand database connectivity and GUI development using Java.
+## Technologies Used
+- Java (J2SE)
+- Java Swing (GUI)
+- MySQL Database
+- JDBC Connector
+
+## Project Structure
+Library-Management-System
+│
+├── src/ (Java Source Code)
+├── lib/ (MySQL Connector Jar)
+├── README.md
+├── books.jpg
+└── logo.jpg
+
+## Database
+Database Name: `library_db`
+
+Tables:
+- books
+- students
+- issue_books
+
+## How to Run the Project
+
+1. Install MySQL
+2. Create database `library_db`
+3. Import tables
+4. Add MySQL Connector Jar
+5. Compile and run
+
+```bash
+javac -cp ".;lib/mysql-connector-java-8.1.0.jar" LibraryManagementSystemFull.java
+java -cp ".;lib/mysql-connector-java-8.1.0.jar" LibraryManagementSystemFull
