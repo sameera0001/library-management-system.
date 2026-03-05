@@ -1,0 +1,542 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
+import java.util.Vector;
+
+public class LibraryManagementSystemFull extends JFrame {
+
+    JProgressBar jProgressBar1;
+    private final String DB_URL = "jdbc:mysql://localhost:3306/library_db";
+    private final String DB_USER = "root";
+    private final String DB_PASS = "Sameera@0509";
+
+    public LibraryManagementSystemFull() {
+        showLoading();
+    }
+
+    private ImageIcon getZoomedImage(String path) {
+        try {
+            ImageIcon icon = new ImageIcon(path);
+            Image img = icon.getImage();
+            Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+            Image scaledImg = img.getScaledInstance(screen.width, screen.height, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaledImg);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public void showLoading() {
+        JFrame loadingFrame = new JFrame();
+        loadingFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        loadingFrame.setUndecorated(true);
+        loadingFrame.setLayout(null);
+
+        JLabel backgroundLabel = new JLabel(getZoomedImage("Loginimage.jpg.jpeg"));
+        backgroundLabel.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                Toolkit.getDefaultToolkit().getScreenSize().height);
+        backgroundLabel.setLayout(null);
+        loadingFrame.add(backgroundLabel);
+
+        jProgressBar1 = new JProgressBar();
+        jProgressBar1.setBounds(100, Toolkit.getDefaultToolkit().getScreenSize().height - 100,
+                Toolkit.getDefaultToolkit().getScreenSize().width - 200, 25);
+        jProgressBar1.setStringPainted(true);
+        jProgressBar1.setForeground(Color.GREEN);
+        backgroundLabel.add(jProgressBar1);
+
+        loadingFrame.setVisible(true);
+
+        new Thread(() -> {
+            for (int i = 0; i <= 100; i++) {
+                try {
+                    Thread.sleep(20);
+                    jProgressBar1.setValue(i);
+                } catch (Exception e) {
+                }
+            }
+            loadingFrame.dispose();
+            showLogin();
+        }).start();
+    }
+
+    public void showLogin() {
+        JFrame frame = new JFrame("Library Management System");
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(null);
+
+        JLabel bgLabel = new JLabel(getZoomedImage("logimage.jpg.jpeg"));
+        bgLabel.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                Toolkit.getDefaultToolkit().getScreenSize().height);
+        bgLabel.setLayout(null);
+        frame.add(bgLabel);
+
+        renderLoginForm(bgLabel, frame);
+
+        frame.setVisible(true);
+    }
+
+    private void renderLoginForm(JLabel bgLabel, JFrame frame) {
+        bgLabel.removeAll();
+        int centerX = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
+
+        JLabel title = new JLabel("Login", SwingConstants.CENTER);
+        title.setBounds(centerX - 300, 180, 600, 60);
+        title.setFont(new Font("Arial", Font.BOLD, 48));
+        title.setForeground(Color.BLACK);
+        bgLabel.add(title);
+
+        JLabel uLabel = new JLabel("UserID");
+        uLabel.setBounds(centerX - 230, 310, 100, 40);
+        uLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        bgLabel.add(uLabel);
+
+        JTextField uField = new JTextField();
+        uField.setBounds(centerX - 100, 310, 320, 40);
+        bgLabel.add(uField);
+
+        JLabel pLabel = new JLabel("Password");
+        pLabel.setBounds(centerX - 230, 380, 120, 40);
+        pLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        bgLabel.add(pLabel);
+
+        JPasswordField pField = new JPasswordField();
+        pField.setBounds(centerX - 100, 380, 320, 40);
+        bgLabel.add(pField);
+
+        JButton loginBtn = new JButton("Login Now");
+        loginBtn.setBounds(centerX - 275, 480, 160, 45);
+        styleButton(loginBtn, Color.BLUE);
+        loginBtn.addActionListener(e -> {
+            if (authenticateUser(uField.getText(), new String(pField.getPassword()))) {
+                frame.dispose();
+                showMainForm();
+            } else {
+                JOptionPane.showMessageDialog(null, "Invalid ID or Password");
+            }
+        });
+        bgLabel.add(loginBtn);
+
+        JButton regBtn = new JButton("Register");
+        regBtn.setBounds(centerX - 95, 480, 160, 45);
+        styleButton(regBtn, Color.BLUE);
+        regBtn.addActionListener(e -> renderRegisterForm(bgLabel, frame));
+        bgLabel.add(regBtn);
+
+        JButton resetBtn = new JButton("Reset Password");
+        resetBtn.setBounds(centerX + 85, 480, 200, 45);
+        styleButton(resetBtn, Color.BLUE);
+        resetBtn.addActionListener(e -> renderResetForm(bgLabel, frame));
+        bgLabel.add(resetBtn);
+
+        bgLabel.revalidate();
+        bgLabel.repaint();
+    }
+
+    private void renderRegisterForm(JLabel bgLabel, JFrame frame) {
+        bgLabel.removeAll();
+        int centerX = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
+        JLabel title = new JLabel("User Registration", SwingConstants.CENTER);
+        title.setBounds(centerX - 300, 180, 600, 60);
+        title.setFont(new Font("Arial", Font.BOLD, 48));
+        bgLabel.add(title);
+
+        JLabel uLabel = new JLabel("New UserID");
+        uLabel.setBounds(centerX - 230, 310, 150, 40);
+        uLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        bgLabel.add(uLabel);
+
+        JTextField uField = new JTextField();
+        uField.setBounds(centerX - 70, 310, 300, 40);
+        bgLabel.add(uField);
+
+        JLabel pLabel = new JLabel("Set Password");
+        pLabel.setBounds(centerX - 230, 380, 150, 40);
+        pLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        bgLabel.add(pLabel);
+
+        JPasswordField pField = new JPasswordField();
+        pField.setBounds(centerX - 70, 380, 300, 40);
+        bgLabel.add(pField);
+
+        JButton saveBtn = new JButton("Register Now");
+        saveBtn.setBounds(centerX - 150, 480, 180, 45);
+        styleButton(saveBtn, new Color(0, 120, 0));
+        saveBtn.addActionListener(e -> {
+            if (addUser(uField.getText(), new String(pField.getPassword()))) {
+                JOptionPane.showMessageDialog(null, "Account Created Successfully!");
+                renderLoginForm(bgLabel, frame);
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to create account!");
+            }
+        });
+        bgLabel.add(saveBtn);
+
+        JButton backBtn = new JButton("Back");
+        backBtn.setBounds(centerX + 50, 480, 100, 45);
+        styleButton(backBtn, Color.BLACK);
+        backBtn.addActionListener(e -> renderLoginForm(bgLabel, frame));
+        bgLabel.add(backBtn);
+
+        bgLabel.revalidate();
+        bgLabel.repaint();
+    }
+
+    private void renderResetForm(JLabel bgLabel, JFrame frame) {
+        bgLabel.removeAll();
+        int centerX = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
+        JLabel title = new JLabel("Reset Password", SwingConstants.CENTER);
+        title.setBounds(centerX - 300, 180, 600, 60);
+        title.setFont(new Font("Arial", Font.BOLD, 48));
+        bgLabel.add(title);
+
+        JLabel uLabel = new JLabel("Enter UserID");
+        uLabel.setBounds(centerX - 230, 310, 150, 40);
+        uLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        bgLabel.add(uLabel);
+
+        JTextField uField = new JTextField();
+        uField.setBounds(centerX - 70, 310, 300, 40);
+        bgLabel.add(uField);
+
+        JButton findBtn = new JButton("Recover");
+        findBtn.setBounds(centerX - 150, 400, 150, 45);
+        styleButton(findBtn, Color.DARK_GRAY);
+        findBtn.addActionListener(e -> {
+            String pass = getPassword(uField.getText());
+            if (pass != null)
+                JOptionPane.showMessageDialog(null, "Pass: " + pass);
+            else
+                JOptionPane.showMessageDialog(null, "User not found!");
+        });
+        bgLabel.add(findBtn);
+
+        JButton backBtn = new JButton("Back");
+        backBtn.setBounds(centerX + 20, 400, 100, 45);
+        styleButton(backBtn, Color.BLACK);
+        backBtn.addActionListener(e -> renderLoginForm(bgLabel, frame));
+        bgLabel.add(backBtn);
+
+        bgLabel.revalidate();
+        bgLabel.repaint();
+    }
+
+    public void showMainForm() {
+        JFrame mainFrame = new JFrame("Library Dashboard");
+        mainFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setLayout(null);
+
+        JLabel bgLabel = new JLabel(getZoomedImage("buttonsimage.jpg.jpeg"));
+        bgLabel.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                Toolkit.getDefaultToolkit().getScreenSize().height);
+        bgLabel.setLayout(null);
+        mainFrame.add(bgLabel);
+
+        String[] buttons = { "Student Registration", "Member Registration", "Add Book",
+                "Search Book", "Delete Book", "Update Book",
+                "Issue Book", "Return Book", "Send Reminder", "View Transaction",
+                "Logout" };
+
+        int screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
+        int btnWidth = 280, btnHeight = 45, gap = 15;
+        int totalHeight = (buttons.length * btnHeight) + ((buttons.length - 1) * gap);
+        int y = (screenHeight - totalHeight) / 2;
+
+        for (String name : buttons) {
+            JButton btn = new JButton(name);
+            btn.setBounds(60, y, btnWidth, btnHeight);
+            styleButton(btn, name.equals("Logout") ? new Color(200, 0, 0) : new Color(0, 0, 180));
+
+            btn.addActionListener(e -> {
+                mainFrame.setVisible(false);
+                switch (name) {
+                    case "Logout":
+                        mainFrame.dispose();
+                        showLogin();
+                        break;
+                    case "Student Registration":
+                        openStudentCRUD(mainFrame);
+                        break;
+                    case "Add Book":
+                        openAddBook(mainFrame);
+                        break;
+                    case "View Transaction":
+                        openViewTransaction(mainFrame);
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(null, name + " functionality not yet implemented.");
+                        mainFrame.setVisible(true);
+                        break;
+                }
+            });
+
+            bgLabel.add(btn);
+            y += (btnHeight + gap);
+        }
+        mainFrame.setVisible(true);
+    }
+
+    // ----------- DATABASE METHODS ------------
+
+    private boolean authenticateUser(String username, String password) {
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+            String sql = "SELECT * FROM users WHERE username=? AND password=?";
+            PreparedStatement pst = con.prepareStatement(sql);
+            pst.setString(1, username);
+            pst.setString(2, password);
+            ResultSet rs = pst.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean addUser(String username, String password) {
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+            String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+            PreparedStatement pst = con.prepareStatement(sql);
+            pst.setString(1, username);
+            pst.setString(2, password);
+            return pst.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String getPassword(String username) {
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+            String sql = "SELECT password FROM users WHERE username=?";
+            PreparedStatement pst = con.prepareStatement(sql);
+            pst.setString(1, username);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) return rs.getString("password");
+            else return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void openStudentCRUD(JFrame parent) {
+        JFrame f = new JFrame();
+        f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        f.setLayout(null);
+        JLabel bg = new JLabel(getZoomedImage("bookimage.jpg.jpeg"));
+        bg.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                Toolkit.getDefaultToolkit().getScreenSize().height);
+        bg.setLayout(null);
+        f.add(bg);
+
+        JButton backBtn = new JButton("<< BACK");
+        backBtn.setBounds(50, 30, 120, 40);
+        styleButton(backBtn, Color.BLACK);
+        backBtn.addActionListener(e -> {
+            f.dispose();
+            parent.setVisible(true);
+        });
+        bg.add(backBtn);
+
+        JLabel title = new JLabel("Student Registration");
+        title.setBounds(100, 100, 600, 60);
+        title.setFont(new Font("Arial", Font.BOLD, 42));
+        bg.add(title);
+
+        JTextField[] fields = new JTextField[5];
+        String[] labels = {"Student ID", "Name", "Course", "Branch", "Semester"};
+        int y = 200;
+        for (int i = 0; i < labels.length; i++) {
+            JLabel lbl = new JLabel(labels[i]);
+            lbl.setBounds(100, y, 200, 40);
+            lbl.setFont(new Font("Arial", Font.BOLD, 26));
+            bg.add(lbl);
+
+            JTextField tf = new JTextField();
+            tf.setBounds(320, y, 350, 40);
+            tf.setFont(new Font("Arial", Font.PLAIN, 20));
+            bg.add(tf);
+            fields[i] = tf;
+            y += 75;
+        }
+
+        JButton saveBtn = new JButton("Register Student");
+        saveBtn.setBounds(100, y + 30, 250, 55);
+        styleButton(saveBtn, new Color(0, 100, 200));
+        saveBtn.addActionListener(e -> {
+            String sid = fields[0].getText();
+            String name = fields[1].getText();
+            String course = fields[2].getText();
+            String branch = fields[3].getText();
+            String sem = fields[4].getText();
+
+            if (sid.isEmpty() || name.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Student ID and Name required!");
+                return;
+            }
+
+            try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+                String sql = "INSERT INTO students (student_id, name, course, branch, semester) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement pst = con.prepareStatement(sql);
+                pst.setString(1, sid);
+                pst.setString(2, name);
+                pst.setString(3, course);
+                pst.setString(4, branch);
+                pst.setString(5, sem);
+                int rows = pst.executeUpdate();
+                if (rows > 0) JOptionPane.showMessageDialog(null, "Student Registered Successfully!");
+                else JOptionPane.showMessageDialog(null, "Failed to register student!");
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "DB Error: " + ex.getMessage());
+            }
+        });
+        bg.add(saveBtn);
+        f.setVisible(true);
+    }
+
+    private void openAddBook(JFrame parent) {
+        JFrame f = new JFrame("Add Book");
+        f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        f.setLayout(null);
+
+        JLabel bg = new JLabel(getZoomedImage("bookimage.jpg.jpeg"));
+        bg.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                Toolkit.getDefaultToolkit().getScreenSize().height);
+        bg.setLayout(null);
+        f.add(bg);
+
+        JLabel l2 = new JLabel("Book Name");
+        l2.setBounds(100, 260, 200, 40);
+        bg.add(l2);
+
+        JTextField t2 = new JTextField();
+        t2.setBounds(320, 260, 300, 40);
+        bg.add(t2);
+
+        JLabel l3 = new JLabel("Publisher");
+        l3.setBounds(100, 320, 200, 40);
+        bg.add(l3);
+
+        JTextField t3 = new JTextField();
+        t3.setBounds(320, 320, 300, 40);
+        bg.add(t3);
+
+        JLabel l4 = new JLabel("Price");
+        l4.setBounds(100, 380, 200, 40);
+        bg.add(l4);
+
+        JTextField t4 = new JTextField();
+        t4.setBounds(320, 380, 300, 40);
+        bg.add(t4);
+
+        JLabel l5 = new JLabel("Publisher Year");
+        l5.setBounds(100, 440, 200, 40);
+        bg.add(l5);
+
+        JTextField t5 = new JTextField();
+        t5.setBounds(320, 440, 300, 40);
+        bg.add(t5);
+
+        JButton saveBtn = new JButton("Save Book");
+        saveBtn.setBounds(320, 520, 200, 50);
+        styleButton(saveBtn, new Color(0, 120, 0));
+        bg.add(saveBtn);
+
+        saveBtn.addActionListener(e -> {
+            String name = t2.getText();
+            String publisher = t3.getText();
+            String priceText = t4.getText();
+            String yearText = t5.getText();
+
+            if (name.isEmpty() || publisher.isEmpty() || priceText.isEmpty() || yearText.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please fill all fields!");
+                return;
+            }
+
+            try {
+                double price = Double.parseDouble(priceText);
+                int year = Integer.parseInt(yearText);
+                try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+                    String sql = "INSERT INTO books (book_name, publisher, price, publisher_year) VALUES (?, ?, ?, ?)";
+                    PreparedStatement pst = con.prepareStatement(sql);
+                    pst.setString(1, name);
+                    pst.setString(2, publisher);
+                    pst.setDouble(3, price);
+                    pst.setInt(4, year);
+
+                    int rows = pst.executeUpdate();
+                    if (rows > 0) {
+                        JOptionPane.showMessageDialog(null, "Book Saved Successfully!");
+                        t2.setText("");
+                        t3.setText("");
+                        t4.setText("");
+                        t5.setText("");
+                    } else JOption                        JOptionPane.showMessageDialog(null, "Failed to save book!");
+                    }
+                }
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(null, "Price and Year must be numbers!");
+            } catch (SQLException sqle) {
+                JOptionPane.showMessageDialog(null, "Database Error: " + sqle.getMessage());
+                sqle.printStackTrace();
+            }
+        });
+
+        f.setVisible(true);
+    }
+
+    private void openViewTransaction(JFrame parent) {
+        JFrame f = new JFrame("View Transactions");
+        f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        f.setLayout(new BorderLayout());
+
+        String[] columns = { "ID", "Student", "Book", "Date", "Due", "Status" };
+        DefaultTableModel model = new DefaultTableModel(columns, 0);
+        JTable table = new JTable(model);
+        table.setFont(new Font("Arial", Font.PLAIN, 18));
+        table.setRowHeight(30);
+
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+            Statement st = con.createStatement();
+            ResultSet rs = st.executeQuery("SELECT * FROM transactions");
+            while (rs.next()) {
+                Vector<Object> row = new Vector<>();
+                row.add(rs.getInt("id"));
+                row.add(rs.getString("student_id"));
+                row.add(rs.getString("book_id"));
+                row.add(rs.getDate("issue_date"));
+                row.add(rs.getDate("due_date"));
+                row.add(rs.getString("status"));
+                model.addRow(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        f.add(new JScrollPane(table), BorderLayout.CENTER);
+        JButton back = new JButton("Back to Dashboard");
+        styleButton(back, Color.BLACK);
+        back.addActionListener(e -> {
+            f.dispose();
+            parent.setVisible(true);
+        });
+        f.add(back, BorderLayout.SOUTH);
+        f.setVisible(true);
+    }
+
+    private void styleButton(JButton btn, Color color) {
+        btn.setBackground(color);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Arial", Font.BOLD, 18));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+    }
+
+    public static void main(String[] args) {
+        new LibraryManagementSystemFull();
+    }
+}
