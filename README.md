@@ -20,4 +20,7 @@ src/ – Java source code
 lib/ – MySQL connector library  
 
 ## Author
-Sameera
+
+**G. Sameera**  
+B.Tech CSE Student  
+Interested in Web Development and Software Development
